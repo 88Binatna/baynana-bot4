@@ -4,8 +4,9 @@ from telegram.ext import ApplicationBuilder, ContextTypes, CommandHandler, Callb
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 TOKEN = "8651679774:AAGi946G4Xdz3IJn_InbhkCSmX6oiWTe4VU"
+ADMIN_ID = "6647526076" # هذا هو رقمك الإداري الذي استخرجناه من 1000008740.jpg
 
-# قائمة الطلبات الذكية التي يديرها البوت
+# قائمة الطلبات الذكية
 ORDER_MENU = {
     "1": "تصميم بوت تليجرام احترافي",
     "2": "أتمتة عمليات الوكالة",
@@ -14,12 +15,8 @@ ORDER_MENU = {
 }
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    # قائمة الطلبات تظهر للعميل فوراً كقائمة خيارات
     keyboard = [[InlineKeyboardButton(f"{k}. {v}", callback_data=f"order_{k}")] for k, v in ORDER_MENU.items()]
-    await update.message.reply_text(
-        "✨ **بيانانا في خدمتك!**\nأنا المسؤول عن إدارة مشاريعك. اختر نوع الطلب لنبدأ التنفيذ:",
-        reply_markup=InlineKeyboardMarkup(keyboard)
-    )
+    await update.message.reply_text("✨ مرحباً بك في بيانانا. اختر نوع الطلب لنبدأ التنفيذ:", reply_markup=InlineKeyboardMarkup(keyboard))
 
 async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -27,27 +24,20 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     
     if query.data.startswith("order_"):
         order_id = query.data.split("_")[1]
-        selected_service = ORDER_MENU.get(order_id)
-        # البوت الآن "مسؤول" ويطلب تفاصيل لإغلاق الصفقة
-        await query.edit_message_text(
-            f"✅ لقد اخترت: {selected_service}.\n\n"
-            "لأتمم المسؤولية، أرسل لي تفاصيل مشروعك أو ميزانيتك، وسأقوم بتحليلها فوراً وإبلاغ الإدارة."
+        service = ORDER_MENU.get(order_id)
+        
+        # رسالة للعميل
+        await query.edit_message_text(f"✅ تم تسجيل طلبك ({service}). جاري المعالجة الرقمية...")
+        
+        # إرسال الإشعار للإدارة (لك أنت)
+        await context.bot.send_message(
+            chat_id=ADMIN_ID,
+            text=f"🔔 **طلب جديد من العميل!**\n\nالخدمة: {service}\nالاسم: {update.effective_user.full_name}"
         )
-
-async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_text = update.message.text.lower()
-    
-    # البوت يجادل ويجيب على الاستفسارات كمدير
-    if any(word in user_text for word in ["سعر", "بكم"]):
-        await update.message.reply_text("الجودة هي عنواننا. أخبرني بتفاصيل طلبك، وسأقدم لك عرضاً يضمن لك أعلى عائد استثماري.")
-    else:
-        await update.message.reply_text("أنا أدير هذه المحادثة... هل لديك استفسار محدد بخصوص خدماتنا؟")
 
 if __name__ == '__main__':
     app = ApplicationBuilder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CallbackQueryHandler(button_handler))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, message_handler))
-    print("--- بيانانا: نظام الإدارة الذاتي يعمل بكامل طاقته ---")
     app.run_polling()
     
